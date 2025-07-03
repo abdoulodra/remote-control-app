@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Contrôle à distance</title>
+</head>
+<body>
+  <h1>Autoriser l'accès à votre téléphone ?</h1>
+  <button onclick="accept()">Oui, j’autorise</button>
+  <button onclick="decline()">Non</button>
+
+  <script>
+    function accept() {
+      fetch("/api/control", {
+        method: "POST",
+        body: JSON.stringify({ access: true }),
+      });
+      alert("Vous avez autorisé le contrôle.");
+    }
+
+    function decline() {
+      fetch("/api/control", {
+        method: "POST",
+        body: JSON.stringify({ access: false }),
+      });
+      alert("Contrôle refusé.");
+    }
+  </script>
+</body>
+</html>

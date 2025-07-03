@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Panneau Admin</title>
+</head>
+<body>
+  <h1>Connexion admin</h1>
+  <input id="login" placeholder="Identifiant" />
+  <input id="password" type="password" placeholder="Mot de passe" />
+  <button onclick="login()">Connexion</button>
+
+  <div id="panel" style="display:none;">
+    <h2>Téléphone distant</h2>
+    <button onclick="sendCommand('vibrate')">Faire vibrer</button>
+    <button onclick="sendCommand('message')">Envoyer message</button>
+  </div>
+
+  <script>
+    function login() {
+      const user = document.getElementById("login").value;
+      const pass = document.getElementById("password").value;
+      if (user === "algarene" && pass === "algarene098765") {
+        document.getElementById("panel").style.display = "block";
+      } else {
+        alert("Identifiants invalides");
+      }
+    }
+
+    function sendCommand(cmd) {
+      fetch("/api/command", {
+        method: "POST",
+        body: JSON.stringify({ command: cmd }),
+      }).then(res => alert("Commande envoyée"));
+    }
+  </script>
+</body>
+</html>
