@@ -1,3 +1,7 @@
 name = "remote-control-app"
 main = "workers/api.js"
+account_id = "8bc23f112e6141aff6947950a5bb8445"
 compatibility_date = "2025-07-01"
+
+[site]
+bucket = "./public"

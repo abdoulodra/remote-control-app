@@ -1,24 +1,17 @@
-let accessGranted = false;
+import { getAssetFromKV } from '@cloudflare/kv-asset-handler'
 
-export default {
-  async fetch(req) {
-    const url = new URL(req.url);
-
-    if (req.method === "POST" && url.pathname === "/api/control") {
-      const data = await req.json();
-      accessGranted = data.access;
-      return new Response("OK");
-    }
-
-    if (req.method === "POST" && url.pathname === "/api/command") {
-      if (!accessGranted) {
-        return new Response("Refusé : l'utilisateur n’a pas donné son accord", { status: 403 });
-      }
-      const { command } = await req.json();
-      console.log(`Commande reçue : ${command}`);
-      return new Response("Commande exécutée");
-    }
-
-    return new Response("404 Not Found", { status: 404 });
+addEventListener('fetch', event => {
+  try {
+    event.respondWith(handleEvent(event))
+  } catch (e) {
+    event.respondWith(new Response('Internal Error', { status: 500 }))
   }
-};
+})
+
+async function handleEvent(event) {
+  try {
+    return await getAssetFromKV(event)
+  } catch (e) {
+    return new Response('Not found', { status: 404 })
+  }
+}
