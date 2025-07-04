@@ -28,7 +28,7 @@
     }
 
     function sendCommand(cmd) {
-      fetch("/api/command", {
+      fetch("https://remote-control-app.abdoulwane26-8bc.workers.dev/api/command", {
         method: "POST",
         body: JSON.stringify({ command: cmd }),
       }).then(res => alert("Commande envoyée"));
