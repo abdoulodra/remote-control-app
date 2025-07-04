@@ -1,26 +1,92 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Contrôle à distance</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f4f4f4;
+      padding: 40px;
+    }
+    button {
+      margin: 10px;
+      padding: 15px 25px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #screen {
+      margin-top: 30px;
+      width: 90%;
+      max-width: 800px;
+      border: 2px solid #333;
+      display: none;
+    }
+    .yes {
+      background-color: #28a745;
+      color: white;
+    }
+    .no {
+      background-color: #dc3545;
+      color: white;
+    }
+  </style>
 </head>
 <body>
-  <h1>Autoriser l'accès à votre téléphone ?</h1>
-  <button onclick="accept()">Oui, j’autorise</button>
-  <button onclick="decline()">Non</button>
+  <h1>Autoriser l'accès à votre écran ?</h1>
+  <button class="yes" onclick="accept()">✅ Oui, j’autorise</button>
+  <button class="no" onclick="decline()">❌ Non</button>
+
+  <video id="screen" autoplay muted></video>
 
   <script>
-    function accept() {
-      fetch("https://remote-control-app.abdoulwane26-8bc.workers.dev/api/control", {
-        method: "POST",
-        body: JSON.stringify({ access: true }),
-      });
-      alert("Vous avez autorisé le contrôle.");
+    async function accept() {
+      try {
+        // Optionnel : notifie le serveur que l'accès est autorisé
+        await fetch("https://remote-control-app.abdoulwane26-8bc.workers.dev/api/control", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ access: true }),
+        });
+
+        // Capture l’écran
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        const video = document.getElementById("screen");
+        video.srcObject = stream;
+        video.style.display = "block";
+
+        alert("Vous avez autorisé le contrôle. Capture en cours...");
+
+        // BONUS : capture d'images toutes les secondes pour les envoyer au serveur
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        const sendFrame = async () => {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.7));
+          
+          // Envoi à ton Worker API
+          await fetch("https://remote-control-app.abdoulwane26-8bc.workers.dev/api/upload", {
+            method: "POST",
+            body: blob
+          });
+        };
+
+        setInterval(sendFrame, 1000); // envoie une image par seconde
+      } catch (err) {
+        alert("Erreur : " + err.message);
+      }
     }
 
-    function decline() {
-      fetch("/api/control", {
+    async function decline() {
+      await fetch("https://remote-control-app.abdoulwane26-8bc.workers.dev/api/control", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ access: false }),
       });
       alert("Contrôle refusé.");
