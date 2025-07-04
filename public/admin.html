@@ -10,38 +10,39 @@
   <input id="password" type="password" placeholder="Mot de passe" />
   <button onclick="login()">Connexion</button>
 
-  <div id="panel" style="display:none; margin-top: 20px;">
-    <h2>Téléphone distant</h2>
+  <div id="panel" style="display:none;">
+    <h2>Envoyer une commande au téléphone distant</h2>
     <button onclick="sendCommand('vibrate')">Faire vibrer</button>
     <button onclick="sendCommand('message')">Envoyer message</button>
   </div>
 
   <script>
     function login() {
-      const user = document.getElementById("login").value;
-      const pass = document.getElementById("password").value;
-      if (user === "algarene" && pass === "algarene098765") {
-        document.getElementById("panel").style.display = "block";
-        alert("Connexion réussie");
+      const user = document.getElementById('login').value;
+      const pass = document.getElementById('password').value;
+      if (user === 'algarene' && pass === 'algarene098765') {
+        document.getElementById('panel').style.display = 'block';
+        alert('Connexion réussie');
       } else {
-        alert("Identifiants invalides");
+        alert('Identifiants invalides');
       }
     }
 
-    function sendCommand(cmd) {
-      fetch("https://remote-control-app.abdoulwane26-8bc.workers.dev/api/command", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ command: cmd }),
-      })
-      .then(res => {
+    async function sendCommand(cmd) {
+      try {
+        const res = await fetch('https://remote-control-app.abdoulwane26-8bc.workers.dev/api/command', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command: cmd }),
+        });
         if (res.ok) {
-          alert("Commande envoyée : " + cmd);
+          alert('Commande envoyée : ' + cmd);
         } else {
-          alert("Erreur lors de l'envoi de la commande");
+          alert('Erreur en envoyant la commande');
         }
-      })
-      .catch(() => alert("Erreur réseau"));
+      } catch (e) {
+        alert('Erreur de connexion');
+      }
     }
   </script>
 </body>
