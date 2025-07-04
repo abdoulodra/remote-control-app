@@ -1,59 +1,58 @@
-import { getAssetFromKV } from '@cloudflare/kv-asset-handler'
+// Simple stockage en mémoire (réinitialisé à chaque déploiement/restart)
+let lastCommand = null;
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*", // à restreindre en prod !
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
 
 addEventListener('fetch', event => {
-  const url = new URL(event.request.url)
-  const { pathname } = url
+  event.respondWith(handleRequest(event.request));
+});
 
-  if (pathname.startsWith("/api/control")) {
-    event.respondWith(handleControl(event))
-  } else if (pathname.startsWith("/api/upload")) {
-    event.respondWith(handleUpload(event))
-  } else if (pathname.startsWith("/api/latest")) {
-    event.respondWith(handleLatest(event))
-  } else {
-    event.respondWith(handleEvent(event)) // sert les fichiers HTML via KV
-  }
-})
+async function handleRequest(request) {
+  const url = new URL(request.url);
 
-// Sert les fichiers HTML/CSS/JS depuis /public
-async function handleEvent(event) {
-  try {
-    return await getAssetFromKV(event)
-  } catch (e) {
-    return new Response('Not found', { status: 404 })
-  }
-}
-
-// Autorisation ou refus d'accès
-async function handleControl(event) {
-  const data = await event.request.json()
-  const allowed = data.access === true
-
-  // Enregistre l'état dans la KV
-  await UPLOAD_KV.put("access", allowed ? "granted" : "denied")
-
-  return new Response(JSON.stringify({ status: allowed ? "granted" : "denied" }), {
-    headers: { "Content-Type": "application/json" }
-  })
-}
-
-// Réception d'une capture d'écran (Blob JPEG)
-async function handleUpload(event) {
-  const blob = await event.request.arrayBuffer()
-  const base64Image = Buffer.from(blob).toString("base64")
-  await UPLOAD_KV.put("latest", base64Image)
-
-  return new Response("Image reçue", { status: 200 })
-}
-
-// Récupération de la dernière image pour admin
-async function handleLatest(event) {
-  const base64Image = await UPLOAD_KV.get("latest")
-  if (!base64Image) {
-    return new Response("Aucune image reçue", { status: 404 })
+  // Gestion CORS préflight
+  if (request.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
   }
 
-  const headers = new Headers()
-  headers.set("Content-Type", "image/jpeg")
-  return new Response(Buffer.from(base64Image, "base64"), { headers })
+  if (url.pathname === "/api/command" && request.method === "POST") {
+    // Réception commande de l’admin
+    try {
+      const data = await request.json();
+      const cmd = data.command;
+
+      if (!cmd) {
+        return new Response("Commande manquante", { status: 400, headers: corsHeaders });
+      }
+
+      // Sauvegarde la dernière commande
+      lastCommand = cmd;
+      console.log(`Commande reçue : ${cmd}`);
+
+      return new Response(`Commande '${cmd}' enregistrée`, { status: 200, headers: corsHeaders });
+    } catch (e) {
+      return new Response("JSON invalide", { status: 400, headers: corsHeaders });
+    }
+  }
+
+  if (url.pathname === "/api/get-command" && request.method === "GET") {
+    // Téléphone distant récupère la dernière commande
+    if (!lastCommand) {
+      return new Response("Aucune commande", { status: 204, headers: corsHeaders }); // No content
+    }
+    // On renvoie la commande puis on reset
+    const cmdToSend = lastCommand;
+    lastCommand = null;
+
+    return new Response(JSON.stringify({ command: cmdToSend }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  }
+
+  return new Response("Not Found", { status: 404, headers: corsHeaders });
 }
