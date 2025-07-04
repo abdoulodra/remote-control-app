@@ -15,3 +15,9 @@ async function handleEvent(event) {
     return new Response('Not found', { status: 404 })
   }
 }
+// functions/api.js
+export async function onRequest(context) {
+  return new Response("Hello from API!", {
+    headers: { "Content-Type": "text/plain" },
+  });
+}
